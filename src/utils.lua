@@ -148,8 +148,13 @@ function utils.useDoubleUp(ID, v)
             local bustDebuff = ''
             if rollData then
                 local bustValue = rollData.bust
-                local isPercentage = rollData.desc:find('%%') ~= nil
-                bustDebuff = isPercentage and string.format(' (-%d%% %s)', bustValue, rollData.desc) or string.format(' (-%d %s)', bustValue, rollData.desc)
+                if type(bustValue) ~= 'number' then
+                    bustValue = '?'
+                    bustDebuff = string.format(' (-%s %s)', bustValue, rollData.desc)
+                else
+                    local isPercentage = rollData.desc:find('%%') ~= nil
+                    bustDebuff = isPercentage and string.format(' (-%d%% %s)', bustValue, rollData.desc) or string.format(' (-%d %s)', bustValue, rollData.desc)
+                end
             end
             local coloredBust = string.format('\x1F\xA7BUST!\x1F\xA8')
             local message = string.format('%s %s %d%s', coloredBust, rolls.IDs[ID], v, bustDebuff)
@@ -182,7 +187,13 @@ function utils.useDoubleUp(ID, v)
                 
                 local bonusInfo = utils.calculateRollBonus(ID, v)
                 if bonusInfo then
-                    local bonusText = bonusInfo.isPercentage and string.format('+%d%%', bonusInfo.value) or string.format('+%d', bonusInfo.value)
+                    local bonusValue = bonusInfo.value
+                    local bonusText
+                    if type(bonusValue) ~= 'number' then
+                        bonusText = '?'
+                    else
+                        bonusText = bonusInfo.isPercentage and string.format('+%d%%', bonusValue) or string.format('+%d', bonusValue)
+                    end
                     
                     local rollName = rolls.IDs[ID]
                     local rollNumberText = string.format('%s %d', rollName, v)
@@ -221,7 +232,13 @@ function utils.useDoubleUp(ID, v)
                 
                 local bonusInfo = utils.calculateRollBonus(ID, v)
                 if bonusInfo then
-                    local bonusText = bonusInfo.isPercentage and string.format('+%d%%', bonusInfo.value) or string.format('+%d', bonusInfo.value)
+                    local bonusValue = bonusInfo.value
+                    local bonusText
+                    if type(bonusValue) ~= 'number' then
+                        bonusText = '?'
+                    else
+                        bonusText = bonusInfo.isPercentage and string.format('+%d%%', bonusValue) or string.format('+%d', bonusValue)
+                    end
                     
                     local rollName = rolls.IDs[ID]
                     local rollNumberText = string.format('%s %d', rollName, v)
@@ -363,7 +380,13 @@ function utils.useDoubleUp(ID, v)
                 
                 local bonusInfo = utils.calculateRollBonus(ID, v)
                 if bonusInfo then
-                    local bonusText = bonusInfo.isPercentage and string.format('+%d%%', bonusInfo.value) or string.format('+%d', bonusInfo.value)
+                    local bonusValue = bonusInfo.value
+                    local bonusText
+                    if type(bonusValue) ~= 'number' then
+                        bonusText = '?'
+                    else
+                        bonusText = bonusInfo.isPercentage and string.format('+%d%%', bonusValue) or string.format('+%d', bonusValue)
+                    end
                     local rollName = rolls.IDs[ID]
                     local rollNumberText = string.format('%s %d', rollName, v)
                     local reason = string.format('Bust Risk %d%%', bustChance)
@@ -651,7 +674,8 @@ function utils.calculateRollBonus(rollID, rollNumber)
     local bonus = 0
     
     if rollNumber > 11 then
-        bonus = -rollData.bust
+        -- Handle rolls where bust value is 'Unknown' (convert to 0)
+        bonus = type(rollData.bust) == 'number' and -rollData.bust or '?'
         return {
             value = bonus,
             description = rollData.desc,
