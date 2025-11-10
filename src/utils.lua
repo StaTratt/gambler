@@ -10,11 +10,17 @@ ashita.events.register('packet_in', 'packet_in_cb', function(e)
     if e.id == 0xB then
         zoning_bool = true
         gambler.snakeEyeMeritsReceived = false
+        gambler.shouldCheckMerits = false
     elseif e.id == 0xA and zoning_bool then
         zoning_bool = false
+        -- Only check merits on zone-in if autoCheckMerits is enabled
+        if gambler.config.autoCheckMerits[1] then
+            gambler.shouldCheckMerits = true
+        end
     end
     
-    if e.id == 0x8C and not gambler.snakeEyeMeritsReceived then
+    -- Only process merit packet if we're expecting it
+    if e.id == 0x8C and gambler.shouldCheckMerits and not gambler.snakeEyeMeritsReceived then
         local meritCount = struct.unpack('H', e.data, 0x04 + 1)
         
         for i = 0, meritCount - 1 do
@@ -28,6 +34,7 @@ ashita.events.register('packet_in', 'packet_in_cb', function(e)
             if actualIndex == 0xC00 then
                 gambler.config.snakeEyeMerits[1] = meritCount
                 gambler.snakeEyeMeritsReceived = true
+                gambler.shouldCheckMerits = false
                 utils.chatPrint(string.format('Snake Eye merit points detected: %d', meritCount), 'bonus')
                 settings.save()
                 break
@@ -108,10 +115,13 @@ function utils.useSnakeEye()
     -- Mark Snake Eye as used for this roll
     gambler.snakeEyeAvailableThisRoll = false
     
-    AshitaCore:GetChatManager():QueueCommand(-1, '/ja "Snake Eye" <me>')
+    -- Add a small delay before queuing Snake Eye to ensure game processes previous action
+    ashita.tasks.once(0.5, function()
+        AshitaCore:GetChatManager():QueueCommand(-1, '/ja "Snake Eye" <me>')
+    end)
     
-    -- Clear the pending flag after a delay
-    ashita.tasks.once(2, function()
+    -- Clear the pending flag after a longer delay
+    ashita.tasks.once(3, function()
         gambler.pendingSnakeEyeDoubleUp = false
     end)
     
@@ -121,6 +131,15 @@ end
 function utils.useDoubleUp(ID, v)
     if not gambler.config.autoRoll[1] then
         return false
+    end
+    
+    -- Check if this roll is in the exception list
+    if gambler.config.autoRollExceptions then
+        for _, exceptionID in ipairs(gambler.config.autoRollExceptions) do
+            if exceptionID == ID then
+                return false
+            end
+        end
     end
 
     if v > 11 then
@@ -254,7 +273,13 @@ function utils.useDoubleUp(ID, v)
     end
     
     -- Check if we should use Snake Eye (only if it was available at the start of this roll)
+    -- Wait for any pending Double-Up to finish before attempting Snake Eye
     if gambler.snakeEyeAvailableThisRoll and gambler.config.doubleUpOnUnlucky[1] and utils.isUnluckyNumber(ID, v) and v < 11 then
+        -- If a Double-Up is pending, wait for it to complete first
+        if gambler.pendingDoubleUp then
+            return true
+        end
+        
         if gambler.config.chatPresence[1] then
             utils.chatPrint(string.format('Rolled unlucky number %d | using Snake Eye to push to %d', v, v+1), 'info')
         end
@@ -273,6 +298,11 @@ function utils.useDoubleUp(ID, v)
         utils.useSnakeEye()
         return true
     elseif gambler.snakeEyeAvailableThisRoll and gambler.config.doubleUpBeforeLucky[1] and utils.isBeforeLucky(ID, v) then
+        -- If a Double-Up is pending, wait for it to complete first
+        if gambler.pendingDoubleUp then
+            return true
+        end
+        
         if gambler.config.chatPresence[1] then
             local rollData = utils.getRollData(ID)
             utils.chatPrint(string.format('Rolled %d | using Snake Eye to push to lucky number %d', v, rollData.lucky), 'info')
@@ -320,7 +350,7 @@ function utils.useDoubleUp(ID, v)
         maxBustRisk = gambler.config.crookedCardsBustRisk[1]
     end
 
-    if bustChance >= maxBustRisk then
+    if bustChance > maxBustRisk then
         gambler.monitor[1] = nil
         gambler.monitor[2] = nil
         gambler.pendingSnakeEyeDoubleUp = false

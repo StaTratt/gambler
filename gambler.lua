@@ -24,6 +24,7 @@ gambler = {
         [3] = false -- Crooked Cards flag (defaults to false, not nil)
     },
     snakeEyeMeritsReceived = false,
+    shouldCheckMerits = false, -- Flag to control when merit packets should be processed
     pendingSnakeEyeDoubleUp = false,
     pendingDoubleUp = false, -- Flag to prevent spamming Double-Up
     initialRollGear = {},

@@ -23,14 +23,24 @@ function ui.drawGeneralSettings()
         settings.save()
     end
     
-    imgui.Separator()
-    
-    -- Snake Eye Merits Section
+    -- Auto-Roll Exceptions (moved under Auto roll checkbox)
+    if gambler.config.autoRoll[1] then
+        imgui.Separator()
+        imgui.Text('Auto-Roll Exceptions:')
+        imgui.TextWrapped('Add rolls that should NOT auto-roll:')
+        ui.drawRollExceptions()
+    end
+end
+
+function ui.drawMeritsSettings()
     imgui.Text('Snake Eye Merits Configuration:')
+    imgui.Separator()
     
     if imgui.Checkbox('Auto-check merits on load', gambler.config.autoCheckMerits) then
         settings.save()
     end
+    
+    imgui.Separator()
     
     imgui.Text(string.format('Snake Eye merit points: %d', gambler.config.snakeEyeMerits[1]))
     imgui.SameLine()
@@ -45,11 +55,17 @@ function ui.drawGeneralSettings()
     end
     imgui.PopItemWidth()
     
+    imgui.Separator()
+    
     if imgui.Button('Check Merits Now') then
+        gambler.shouldCheckMerits = true
+        gambler.snakeEyeMeritsReceived = false
         if utils.readSnakeEyeMeritsFromMemory() then
             utils.chatPrint(string.format('Snake Eye merit points: %d', gambler.config.snakeEyeMerits[1]), 'bonus')
+            gambler.shouldCheckMerits = false
         else
             utils.chatPrint('Failed to read merit data from memory. Make sure you are logged in.', 'error')
+            gambler.shouldCheckMerits = false
         end
     end
 end
@@ -108,6 +124,92 @@ function ui.drawProbabilitySettings()
     imgui.Columns(1)
 end
 
+function ui.drawRollExceptions()
+    local rolls = require('data/rolls')
+    
+    -- Initialize exceptions table if it doesn't exist
+    if not gambler.config.autoRollExceptions then
+        gambler.config.autoRollExceptions = {}
+    end
+    
+    -- Initialize input buffer if it doesn't exist
+    if not ui.rollExceptionInput then
+        ui.rollExceptionInput = { '' }
+    end
+    
+    -- Text input for roll name
+    imgui.PushItemWidth(250)
+    imgui.InputText('##rollExceptionInput', ui.rollExceptionInput, 100)
+    imgui.PopItemWidth()
+    
+    imgui.SameLine()
+    
+    -- Plus button to add roll
+    if imgui.Button('+##addException') then
+        local inputName = ui.rollExceptionInput[1]:gsub("^%s*(.-)%s*$", "%1") -- trim whitespace
+        
+        if inputName ~= '' then
+            -- Find matching roll by name using substring match (same as command system)
+            local foundRollID = nil
+            for id, name in pairs(rolls.IDs) do
+                if string.find(string.lower(name), string.lower(inputName)) then
+                    foundRollID = id
+                    break
+                end
+            end
+            
+            if foundRollID then
+                -- Check if already in exceptions
+                local alreadyExists = false
+                for _, id in ipairs(gambler.config.autoRollExceptions) do
+                    if id == foundRollID then
+                        alreadyExists = true
+                        break
+                    end
+                end
+                
+                if not alreadyExists then
+                    table.insert(gambler.config.autoRollExceptions, foundRollID)
+                    settings.save()
+                    ui.rollExceptionInput = { '' } -- Clear input
+                else
+                    utils.chatPrint('Roll already in exception list', 'warning')
+                end
+            else
+                utils.chatPrint('Roll not found: ' .. ui.rollExceptionInput[1], 'error')
+            end
+        end
+    end
+    
+    imgui.Separator()
+    
+    -- Display current exceptions with remove buttons
+    if #gambler.config.autoRollExceptions > 0 then
+        imgui.Text('Current Exceptions:')
+        
+        local toRemove = nil
+        for i, rollID in ipairs(gambler.config.autoRollExceptions) do
+            local rollName = rolls.IDs[rollID] or 'Unknown Roll'
+            
+            -- Minus button to remove
+            if imgui.Button('-##remove' .. rollID) then
+                toRemove = i
+            end
+            
+            imgui.SameLine()
+            imgui.Text(rollName)
+        end
+        
+        -- Remove after iteration to avoid modifying table while iterating
+        if toRemove then
+            table.remove(gambler.config.autoRollExceptions, toRemove)
+            settings.save()
+        end
+    else
+        imgui.TextColored({0.7, 0.7, 0.7, 1.0}, 'No exceptions added')
+    end
+end
+
 function ui.drawDebugSettings()
     imgui.TextColored({1.0, 0.5, 0.0, 1.0}, 'WARNING: These are debug settings for testing purposes.')
     imgui.Separator()
@@ -130,6 +232,10 @@ function ui.drawUI()
             end
             if imgui.BeginTabItem('Probability Settings') then
                 ui.drawProbabilitySettings()
+                imgui.EndTabItem()
+            end
+            if imgui.BeginTabItem('Merits') then
+                ui.drawMeritsSettings()
                 imgui.EndTabItem()
             end
             if imgui.BeginTabItem('DEBUG') then

@@ -16,7 +16,8 @@ local default = T {
     useCrookedCardsBustRisk = { false },
     crookedCardsBustRisk = { 75 },
     debugMode = { false },
-    debugStopOnSnakeEye = { false }
+    debugStopOnSnakeEye = { false },
+    autoRollExceptions = {} -- List of roll IDs to exclude from auto-rolling
 }
 
 config.load = function ()
