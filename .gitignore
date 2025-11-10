@@ -1,3 +1,4 @@
 .editorconfig
 .vscode/
 .luarc.json
+.gitignore
