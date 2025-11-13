@@ -32,6 +32,12 @@ gambler = {
     snakeEyeAvailableThisRoll = false -- Checked once at start of roll, used throughout
 }
 
+-- Load event to ensure settings are loaded
+ashita.events.register('load', 'load_cb', function()
+    gambler.config = config.load()
+    print(chat.header(addon.name):append(chat.message('Configuration loaded.')))
+end)
+
 -- Snake Eye merits are automatically detected from packet 0x8C in utils.lua
 
 ashita.events.register('command', 'command_cb', function (cmd, nType)
@@ -46,27 +52,4 @@ ashita.events.register('d3d_present', 'd3d_present_cb', function ()
         utils.useDoubleUp(gambler.monitor[1], gambler.monitor[2])
     end
     ui.update()
-end)
-
-ashita.events.register('text_in', 'text_in_cb', function(e)
-    -- Block system messages about roll effects
-    if e.message ~= nil then
-        local party = AshitaCore:GetMemoryManager():GetParty()
-        if party then
-            local playerName = party:GetMemberName(0)
-            if playerName and playerName ~= '' then
-                local msg = e.message
-                
-                -- Escape special pattern characters in player name
-                local escapedName = playerName:gsub('[%^%$%(%)%%%.%[%]%*%+%-%?]', '%%%1')
-                
-                -- Block messages that show roll application
-                -- Format: "[PlayerName] # RollName → PlayerName"
-                if msg:find('%[' .. escapedName .. '%].*Roll') and msg:find('→') then
-                    return true
-                end
-            end
-        end
-    end
-    return false
 end)

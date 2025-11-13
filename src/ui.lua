@@ -16,11 +16,11 @@ end
 
 function ui.drawGeneralSettings()
     if imgui.Checkbox('Print to chat', gambler.config.chatPresence) then
-        settings.save()
+        settings.save(gambler.config)
     end
 
     if imgui.Checkbox('Auto roll', gambler.config.autoRoll) then
-        settings.save()
+        settings.save(gambler.config)
     end
     
     -- Auto-Roll Exceptions (moved under Auto roll checkbox)
@@ -37,7 +37,7 @@ function ui.drawMeritsSettings()
     imgui.Separator()
     
     if imgui.Checkbox('Auto-check merits on load', gambler.config.autoCheckMerits) then
-        settings.save()
+        settings.save(gambler.config)
     end
     
     imgui.Separator()
@@ -51,7 +51,7 @@ function ui.drawMeritsSettings()
         elseif gambler.config.snakeEyeMerits[1] > 5 then
             gambler.config.snakeEyeMerits = { 5 }
         end
-        settings.save()
+        settings.save(gambler.config)
     end
     imgui.PopItemWidth()
     
@@ -76,17 +76,17 @@ function ui.drawProbabilitySettings()
     
     imgui.Text('Normal rolls - Max acceptable bust risk (%):')
     if imgui.SliderInt('##maxBustRisk', gambler.config.maxBustRisk, 0, 100) then
-        settings.save()
+        settings.save(gambler.config)
     end
     
     if imgui.Checkbox('Use different bust risk for Crooked Cards', gambler.config.useCrookedCardsBustRisk) then
-        settings.save()
+        settings.save(gambler.config)
     end
     
     if gambler.config.useCrookedCardsBustRisk[1] then
         imgui.Text('Crooked Cards - Max acceptable bust risk (%):')
         if imgui.SliderInt('##crookedCardsBustRisk', gambler.config.crookedCardsBustRisk, 0, 100) then
-            settings.save()
+            settings.save(gambler.config)
         end
     end
     
@@ -100,7 +100,7 @@ function ui.drawProbabilitySettings()
     imgui.Separator()
     
     if imgui.Checkbox('Stop on lucky number', gambler.config.stopOnLucky) then
-        settings.save()
+        settings.save(gambler.config)
     end
     
     -- Right column: Snake Eye Behavior
@@ -109,15 +109,15 @@ function ui.drawProbabilitySettings()
     imgui.Separator()
     
     if imgui.Checkbox('Use on unlucky number', gambler.config.doubleUpOnUnlucky) then
-        settings.save()
+        settings.save(gambler.config)
     end
     
     if imgui.Checkbox('Use before lucky number', gambler.config.doubleUpBeforeLucky) then
-        settings.save()
+        settings.save(gambler.config)
     end
     
     if imgui.Checkbox('Use on 11', gambler.config.doubleUpOn11) then
-        settings.save()
+        settings.save(gambler.config)
     end
     
     -- End columns
@@ -170,7 +170,7 @@ function ui.drawRollExceptions()
                 
                 if not alreadyExists then
                     table.insert(gambler.config.autoRollExceptions, foundRollID)
-                    settings.save()
+                    settings.save(gambler.config)
                     ui.rollExceptionInput = { '' } -- Clear input
                 else
                     utils.chatPrint('Roll already in exception list', 'warning')
@@ -203,7 +203,7 @@ function ui.drawRollExceptions()
         -- Remove after iteration to avoid modifying table while iterating
         if toRemove then
             table.remove(gambler.config.autoRollExceptions, toRemove)
-            settings.save()
+            settings.save(gambler.config)
         end
     else
         imgui.TextColored({0.7, 0.7, 0.7, 1.0}, 'No exceptions added')
@@ -215,7 +215,7 @@ function ui.drawDebugSettings()
     imgui.Separator()
     
     if imgui.Checkbox('Stop rolling when Snake Eye would be used', gambler.config.debugStopOnSnakeEye) then
-        settings.save()
+        settings.save(gambler.config)
     end
     
     if gambler.config.debugStopOnSnakeEye[1] then

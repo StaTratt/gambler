@@ -36,7 +36,7 @@ ashita.events.register('packet_in', 'packet_in_cb', function(e)
                 gambler.snakeEyeMeritsReceived = true
                 gambler.shouldCheckMerits = false
                 utils.chatPrint(string.format('Snake Eye merit points detected: %d', meritCount), 'bonus')
-                settings.save()
+                settings.save(gambler.config)
                 break
             end
         end
@@ -577,7 +577,7 @@ function utils.readSnakeEyeMeritsFromMemory()
             
             if meritId == 0xC00 then
                 gambler.config.snakeEyeMerits[1] = meritCount
-                settings.save()
+                settings.save(gambler.config)
                 return true
             end
             
@@ -877,6 +877,62 @@ function utils.getBustInfo(currentRoll, rollID)
         currentRoll = currentRoll,
         snakeEyeMerits = snakeEyeMerits
     }
+end
+
+function utils.lookupRoll(arg)
+    local matches = {}
+    
+    if type(arg) == 'number' then
+        if rolls.IDs[arg] then
+            local rollData = utils.getRollData(arg)
+            local effect = rollData and rollData.desc or 'Unknown'
+            utils.chatPrint(string.format('Found roll by ID: %s (Effect: %s)', rolls.IDs[arg], effect), 'info')
+            table.insert(matches, arg)
+        end
+    elseif type(arg) == 'string' then
+        local argLower = string.lower(arg)
+        
+        -- Search by roll name (substring matching)
+        for id, name in pairs(rolls.IDs) do
+            if string.find(string.lower(name), argLower) then
+                local rollData = utils.getRollData(id)
+                local effect = rollData and rollData.desc or 'Unknown'
+                utils.chatPrint(string.format('Found roll by name: %s (Effect: %s)', name, effect), 'info')
+                table.insert(matches, id)
+            end
+        end
+        
+        -- Search by buff effect description
+        for id, name in pairs(rolls.IDs) do
+            local rollData = utils.getRollData(id)
+            if rollData and rollData.desc then
+                if string.find(string.lower(rollData.desc), argLower) then
+                    -- Check if we already found this roll by name to avoid duplicates
+                    local alreadyFound = false
+                    for _, matchedId in ipairs(matches) do
+                        if matchedId == id then
+                            alreadyFound = true
+                            break
+                        end
+                    end
+                    
+                    if not alreadyFound then
+                        utils.chatPrint(string.format('Found roll by effect: %s (Effect: %s)', name, rollData.desc), 'info')
+                        table.insert(matches, id)
+                    end
+                end
+            end
+        end
+        
+        -- if no matches found, print error
+        if #matches == 0 then
+            utils.chatPrint(string.format('No roll found matching: %s', arg), 'error')
+        else
+            utils.chatPrint(string.format('Total matches found: %d', #matches), 'success')
+        end
+    end
+    
+    return matches
 end
 
 return utils
