@@ -1,6 +1,6 @@
 addon.name = 'gambler'
 addon.version = '1.0'
-addon.author = 'StaTratt, partially based on rollTracker'
+addon.author = 'StaTratt, data from rollTracker'
 addon.desc = 'auto-roll corsair rolls based on config parameters'
 addon.link = 'https://github.com/StaTratt/gambler'
 
