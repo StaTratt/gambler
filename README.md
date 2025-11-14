@@ -18,11 +18,10 @@ Open the configuration window with `/gambler` to access:
 ## Commands
 
 ```
-/gambler              - Toggle configuration window
-/gambler config       - Toggle configuration window
-/gambler help         - Display help message
-/gambler roll <name>  - Manually cast a roll (supports partial names)
-/gambler lookup <text> - Search for rolls by name or effect
+/gambler                  - Toggle configuration window
+/gambler roll <name>      - Manually cast a roll (supports partial names)
+/gambler lookup <text>    - Search for rolls by name or effect
+/gambler help             - Display help message
 ```
 
 ## Credits
